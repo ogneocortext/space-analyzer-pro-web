@@ -1,0 +1,93 @@
+[
+  {
+    "timestamp": 1768211812125,
+    "query": "What are the largest files?",
+    "model": "gemma3:latest",
+    "responseTime": 43971,
+    "success": true,
+    "analysisFingerprint": {
+      "totalFiles": 100,
+      "totalSize": 1073741824,
+      "categories": [
+        "Documents"
+      ]
+    },
+    "responseLength": 3352
+  },
+  {
+    "timestamp": 1768323794678,
+    "question": "What are the largest files in this analysis and why should I be concerned about them?",
+    "responseLength": 1144,
+    "model": "deepseek-coder:6.7b"
+  },
+  {
+    "timestamp": 1768673582254,
+    "query": "What types of files are in this React project and which ones are taking up the most space?",
+    "model": "gemma3:latest",
+    "responseTime": 47578,
+    "success": true,
+    "analysisFingerprint": {
+      "totalFiles": 13,
+      "totalSize": 202665,
+      "categories": [
+        "Web Development",
+        "TypeScript",
+        "React/TypeScript",
+        "Other"
+      ]
+    },
+    "responseLength": 2266
+  },
+  {
+    "timestamp": 1768673654237,
+    "query": "Help me organize this React project - which files should I focus on first for cleanup?",
+    "model": "gemma3:latest",
+    "responseTime": 53816,
+    "success": true,
+    "analysisFingerprint": {
+      "totalFiles": 13,
+      "totalSize": 202665,
+      "categories": [
+        "React/TypeScript",
+        "Other"
+      ]
+    },
+    "responseLength": 3384
+  },
+  {
+    "timestamp": 1768673887025,
+    "query": "What types of files are in this React project and which ones are taking up the most space?",
+    "model": "gemma3:latest",
+    "responseTime": 1,
+    "success": true,
+    "analysisFingerprint": {
+      "totalFiles": 13,
+      "totalSize": 202665,
+      "categories": [
+        "Web Development",
+        "TypeScript",
+        "React/TypeScript",
+        "Other"
+      ]
+    },
+    "responseLength": 2266
+  },
+  {
+    "timestamp": 1768673938927,
+    "query": "What types of files are in this React project and which ones are taking up the most space? Please provide exact percentages.",
+    "model": "gemma3:latest",
+    "responseTime": 44245,
+    "success": true,
+    "analysisFingerprint": {
+      "totalFiles": 13,
+      "totalSize": 202665,
+      "categories": [
+        "Web Development",
+        "TypeScript",
+        "React/TypeScript",
+        "Other"
+      ]
+    },
+    "responseLength": 2326
+  }
+]

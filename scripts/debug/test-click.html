@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Click Test</title>
+</head>
+<body>
+    <h1>Testing Container Click Functionality</h1>
+    
+    <h2>What Should Happen When You Click a Container:</h2>
+    
+    <ol>
+        <li><strong>Visual Selection:</strong> The clicked card gets the "selected" class and visual indicator</li>
+        <li><strong>State Update:</strong> The selectedImplementation property updates to the clicked implementation</li>
+        <li><strong>Button Update:</strong> Launch button text changes based on the selected implementation</li>
+        <li><strong>Visual Feedback:</strong> Scale animation and ripple effect on the clicked card</li>
+        <li><strong>State Persistence:</strong> Selection is saved to localStorage</li>
+        <li><strong>Conflict Check:</strong> System checks for potential port conflicts</li>
+        <li><strong>History Update:</strong> Implementation is added to launch history</li>
+    </ol>
+    
+    <h2>Current Event Handler Flow:</h2>
+    
+    <pre><code>1. Click event fires on .implementation-card
+2. Event listener extracts data-implementation attribute
+3. Calls selectImplementation(implementation)
+4. Updates UI with selected class
+5. Updates launch button text
+6. Checks for conflicts
+7. Saves to localStorage
+8. Adds visual feedback (scale + ripple)
+9. Updates previous selection tracking
+10. Adds to launch history</code></pre>
+    
+    <h2>Test Steps:</h2>
+    
+    <ol>
+        <li>Open http://localhost:3000 in your browser</li>
+        <li>Open browser developer tools (F12)</li>
+        <li>Go to the Console tab</li>
+        <li>Click on different implementation cards</li>
+        <li>Watch for console logs and visual changes</li>
+        <li>Check that the selected card gets the blue border and glow</li>
+        <li>Verify the launch button text changes appropriately</li>
+        <li>Test keyboard navigation (arrow keys, number keys)</li>
+        <li>Press "?" to see keyboard shortcuts</li>
+    </ol>
+    
+    <h2>Expected Visual Changes:</h2>
+    
+    <ul>
+        <li>Selected card gets blue border and glow effect</li>
+        <li>Small pulsing dot appears in top-right corner</li>
+        <li>Scale animation (0.95 scale then bounce back)</li>
+        <li>Ripple effect expanding from center</li>
+        <li>Launch button text updates based on selection</li>
+    </ul>
+    
+    <h2>Troubleshooting:</h2>
+    
+    <p>If clicking doesn't work:</p>
+    <ul>
+        <li>Check browser console for JavaScript errors</li>
+        <li>Verify the JavaScript file is loading correctly</li>
+        <li>Make sure CSS transitions are not disabled</li>
+        <li>Check that the launcher-script.js is included in the HTML</li>
+    </ul>
+    
+    <p><a href="http://localhost:3000" target="_blank">Open Launcher to Test</a></p>
+</body>
+</html>

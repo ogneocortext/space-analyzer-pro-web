@@ -1,0 +1,91 @@
+{
+  "name": "space-analyzer-backend",
+  "version": "2.1.0",
+  "description": "Modern, modular backend for Space Analyzer with enhanced security and performance",
+  "main": "server-improved.js",
+  "scripts": {
+    "start": "node server-improved.js",
+    "dev": "nodemon server-improved.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "build": "echo 'No build step required for Node.js'",
+    "docker:build": "docker build -t space-analyzer-backend .",
+    "docker:run": "docker run -p 3000:3000 space-analyzer-backend"
+  },
+  "keywords": [
+    "space-analyzer",
+    "file-analysis",
+    "ai-integration",
+    "backend",
+    "nodejs",
+    "express"
+  ],
+  "author": "Space Analyzer Team",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^0.14.0",
+    "@js-temporal/polyfill": "^0.5.1",
+    "axios": "^1.16.0",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "diskusage": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.4.0",
+    "path-to-regexp": "^8.4.2",
+    "qs": "^6.14.2",
+    "uuid": "^14.0.0",
+    "express-validator": "^7.2.1",
+    "fast-glob": "^3.3.3",
+    "file-type": "^22.0.1",
+    "filesize": "^11.0.17",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
+    "playwright": "^1.52.0",
+    "prom-client": "^15.1.3",
+    "redis": "^5.0.0",
+    "sqlite3": "^6.0.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.15.2",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.4.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.5.1",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.5.3",
+    "supertest": "^7.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  }
+}

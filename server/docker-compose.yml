@@ -1,0 +1,177 @@
+version: '3.8'
+
+services:
+  # Space Analyzer Backend
+  space-analyzer-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DB_TYPE=sqlite
+      - DB_NAME=space_analyzer.db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_TTL=3600
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - OLLAMA_ENABLED=true
+      - OLLAMA_ENDPOINT=http://ollama:11434
+      - OLLAMA_DEFAULT_MODEL=gemma3:latest
+      - LMSTUDIO_ENABLED=false
+      - LOCALAI_ENABLED=false
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+      - LOG_FILE_ENABLED=true
+      - LOG_FILE_PATH=/app/logs/app.log
+      - LOG_CONSOLE_ENABLED=true
+      - CORS_ORIGIN=*
+      - CORS_CREDENTIALS=false
+      - HELMET_ENABLED=true
+      - RATE_LIMIT_WINDOW=900000
+      - RATE_LIMIT_MAX=100
+      - MAX_FILE_SIZE=104857600
+      - ALLOWED_EXTENSIONS=*
+      - TEMP_DIR=/app/temp
+      - SCAN_TIMEOUT=300000
+      - MAX_CONCURRENT_SCANS=5
+      - COMPRESSION_ENABLED=true
+      - COMPRESSION_LEVEL=6
+      - COMPRESSION_THRESHOLD=1024
+      - METRICS_ENABLED=true
+      - METRICS_ENDPOINT=/metrics
+      - HEALTH_CHECK_ENABLED=true
+      - HEALTH_CHECK_PATH=/api/health
+      - READY_CHECK_ENABLED=true
+      - READY_CHECK_PATH=/api/ready
+      - STARTUP_CHECK_ENABLED=true
+      - STARTUP_CHECK_PATH=/api/startup
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./temp:/app/temp
+      - ./dist:/app/dist
+      - space_analyzer_data:/app/data
+    depends_on:
+      - redis
+      - ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - space-analyzer-network
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - space-analyzer-network
+
+  # Ollama for AI models
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=http://localhost*,http://ui*
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:11434"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - space-analyzer-network
+
+  # Optional: Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - space-analyzer-backend
+    restart: unless-stopped
+    networks:
+      - space-analyzer-network
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - space-analyzer-network
+
+  # Optional: Grafana for monitoring dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - space-analyzer-network
+
+volumes:
+  redis_data:
+    driver: local
+  ollama_models:
+    driver: local
+  space_analyzer_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  space-analyzer-network:
+    driver: bridge

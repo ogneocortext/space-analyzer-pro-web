@@ -1,0 +1,90 @@
+# Node / npm
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.vite/
+*.tsbuildinfo
+next/
+.nuxt/
+
+# Environment & secrets (NEVER commit)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+server/.jwt-secret
+*.secret
+*.key
+config/secrets/
+
+# Python (for ai-service)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Databases
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal
+data/
+*.dat
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+coverage/
+.nyc_output/
+
+# OS generated
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+nul
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+bin/
+build-artifacts/
+target/   # in case Rust native scanner outputs land here
+
+# Runtime state
+.backend-port
+.cache/
+
+# Agent tooling
+.playwright-mcp/
+.devin/
+.kilo/
+
+# Backups
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp

@@ -1,0 +1,122 @@
+# Load Testing Configuration for Space Analyzer API
+# Tests API performance under various load conditions
+
+config:
+  target: 'http://localhost:8080'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Ramp up load"
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 50
+      name: "Peak load"
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+
+scenarios:
+  - name: "Health Check Load Test"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+            - contentType: json
+          capture:
+            - json: "$.status"
+              as: "healthStatus"
+
+  - name: "AI Models Load Test"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/ai/models"
+          expect:
+            - statusCode: 200
+            - contentType: json
+          capture:
+            - json: "$.length"
+              as: "modelCount"
+
+  - name: "Scan Operations Load Test"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/scan/start"
+          json:
+            path: "/test/directory"
+            options:
+              recursive: true
+              includeHidden: false
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$.scanId"
+              as: "scanId"
+      - think: 2
+      - get:
+          url: "/api/scan/{{ scanId }}/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - loop:
+          - get:
+              url: "/api/scan/{{ scanId }}/status"
+              expect:
+                - statusCode: 200
+          count: 5
+
+  - name: "Analysis Load Test"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/analysis/test-scan-123"
+          expect:
+            - statusCode: 200
+            - contentType: json
+          capture:
+            - json: "$.totalSize"
+              as: "totalSize"
+            - json: "$.fileCount"
+              as: "fileCount"
+
+processor:
+  - function: "randomPath"
+    js: >
+      function randomPath() {
+        const paths = [
+          "/test/directory",
+          "/home/user/documents",
+          "/var/log",
+          "/tmp/test"
+        ];
+        return paths[Math.floor(Math.random() * paths.length)];
+      }
+
+  - function: "generateScanId"
+    js: >
+      function generateScanId() {
+        return "scan-" + Math.random().toString(36).substr(2, 9);
+      }
+
+  - function: "logPerformance"
+    js: >
+      function logPerformance(context, events, done) {
+        const responseTimes = events.filter(e => e.type === 'request').map(e => e.responseTime);
+        const avgTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        const maxTime = Math.max(...responseTimes);
+        const minTime = Math.min(...responseTimes);
+        
+        console.log(`Performance metrics - Avg: ${avgTime.toFixed(2)}ms, Max: ${maxTime}ms, Min: ${minTime}ms`);
+        return done();
+      }
+
+hooks:
+  - after: "logPerformance"

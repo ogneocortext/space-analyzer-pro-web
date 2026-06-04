@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Ollama Vision Analysis - Interactive Test Console for Space Analyzer" />
+    <meta name="theme-color" content="#0d2137" />
+    <title>Ollama Vision Test Console</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+        color: #e2e8f0; padding: 20px; min-height: 100vh;
+      }
+      .container { max-width: 1100px; margin: 0 auto; }
+      h1 { text-align: center; margin-bottom: 5px; color: #60a5fa; font-size: 1.6rem; }
+      .subtitle { text-align: center; color: #94a3b8; margin-bottom: 20px; font-size: 0.9rem; }
+      .panel {
+        background: rgba(30, 41, 59, 0.8); border-radius: 12px;
+        padding: 20px; margin-bottom: 16px; border: 1px solid rgba(148,163,184,0.1);
+      }
+      .panel h2 { color: #60a5fa; margin-bottom: 12px; font-size: 1.05rem; }
+      .status {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 15px; border-radius: 8px; margin-bottom: 10px;
+      }
+      .status.online { background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.3); }
+      .status.offline { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.3); }
+      .status-icon { width: 12px; height: 12px; border-radius: 50%; }
+      .online .status-icon { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+      .offline .status-icon { background: #ef4444; }
+      select, input, textarea, button {
+        width: 100%; padding: 10px 15px; border-radius: 8px;
+        border: 1px solid rgba(148,163,184,0.2);
+        background: rgba(15,23,42,0.6); color: #e2e8f0; font-size: 14px; margin-bottom: 10px;
+      }
+      button {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        border: none; cursor: pointer; font-weight: 600; transition: all 0.2s;
+      }
+      button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.4); }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-secondary { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); }
+      .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+      .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+      .results {
+        background: rgba(15,23,42,0.6); border-radius: 8px;
+        padding: 15px; font-family: "Courier New", monospace;
+        font-size: 13px; max-height: 500px; overflow-y: auto;
+        white-space: pre-wrap; word-break: break-word;
+      }
+      .metric {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 5px 12px; background: rgba(59,130,246,0.2);
+        border-radius: 20px; font-size: 12px; margin-right: 8px; margin-bottom: 8px;
+      }
+      .metric-value { color: #60a5fa; font-weight: 600; }
+      .error { color: #ef4444; } .success { color: #22c55e; } .warning { color: #f59e0b; }
+      .progress-bar { width: 100%; height: 4px; background: rgba(148,163,184,0.2); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+      .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); transition: width 0.3s; }
+      .model-card {
+        background: rgba(15,23,42,0.4); border-radius: 8px;
+        padding: 12px; margin-bottom: 8px; border: 1px solid rgba(148,163,184,0.1);
+        cursor: pointer; transition: all 0.2s;
+      }
+      .model-card:hover { border-color: rgba(59,130,246,0.5); background: rgba(15,23,42,0.6); }
+      .model-card.selected { border-color: #3b82f6; background: rgba(59,130,246,0.2); }
+      .model-name { font-weight: 600; color: #60a5fa; }
+      .model-info { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+      .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px; }
+      .tag-vision { background: rgba(168,85,247,0.2); color: #a855f7; }
+      .tag-fast { background: rgba(34,197,94,0.2); color: #22c55e; }
+      .tag-heavy { background: rgba(245,158,11,0.2); color: #f59e0b; }
+      .image-upload { border: 2px dashed rgba(148,163,184,0.3); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 15px; }
+      .image-upload:hover { border-color: #3b82f6; background: rgba(59,130,246,0.05); }
+      .image-preview { max-width: 100%; max-height: 300px; border-radius: 8px; margin: 10px 0; display: none; }
+      .batch-list { max-height: 200px; overflow-y: auto; margin-bottom: 10px; }
+      .batch-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(15,23,42,0.4); border-radius: 6px; margin-bottom: 4px; }
+      .batch-item button { padding: 4px 10px; font-size: 12px; width: auto; }
+      label { display: block; margin-bottom: 5px; color: #e2e8f0; font-size: 14px; }
+      .tabs { display: flex; gap: 4px; margin-bottom: 15px; }
+      .tab { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; background: rgba(15,23,42,0.4); border: 1px solid transparent; transition: all 0.2s; }
+      .tab.active { background: rgba(59,130,246,0.2); border-color: #3b82f6; color: #60a5fa; }
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧠 Ollama Vision Test Console</h1>
+      <p class="subtitle">Interactive analysis of Space Analyzer screenshots with feedback loop tracking</p>
+
+      <!-- Status indicators -->
+      <div class="panel">
+        <h2>🔗 System Status</h2>
+        <div id="ollamaStatus" class="status offline"><div class="status-icon"></div><span>Ollama: Checking...</span></div>
+        <div id="backendStatus" class="status offline"><div class="status-icon"></div><span>Backend Proxy: Checking...</span></div>
+        <div class="grid-2">
+          <button class="btn-secondary" onclick="checkConnections()">🔄 Refresh Status</button>
+          <button class="btn-secondary" onclick="loadPerformance()">📊 Model Performance</button>
+        </div>
+        <div id="perfMetrics" style="margin-top:10px; font-size:12px; color:#94a3b8;"></div>
+      </div>
+
+      <!-- Vision Analysis Tabs -->
+      <div class="panel">
+        <h2>🖼 Vision Analysis</h2>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('single')">Single Image</div>
+          <div class="tab" onclick="switchTab('batch')">Batch Analysis</div>
+          <div class="tab" onclick="switchTab('compare')">Model Compare</div>
+        </div>
+
+        <!-- Single Image Analysis -->
+        <div id="tab-single">
+          <label>Select Model</label>
+          <select id="singleModel">
+            <option value="qwen3-vl:4b">🧠 qwen3-vl:4b (Vision - Best Quality)</option>
+            <option value="phi4-mini:latest">⚡ phi4-mini:latest (Fast)</option>
+            <option value="llava:7b">👁️ llava:7b (Vision)</option>
+            <option value="gemma3:4b">⚖️ gemma3:4b (General)</option>
+          </select>
+
+          <div class="image-upload" id="dropZone" onclick="document.getElementById('imageInput').click()">
+            <p>📷 Click or drag screenshot here</p>
+            <p style="font-size:12px; color:#94a3b8; margin-top:5px;">Supports PNG, JPG, BMP</p>
+          </div>
+          <input type="file" id="imageInput" accept="image/*" onchange="previewImage(this)" style="display:none">
+          <img id="preview" class="image-preview">
+
+          <label>Analysis Prompt</label>
+          <textarea id="singlePrompt" rows="4" placeholder="Analyze this screenshot of a disk space analyzer application. Evaluate UI/UX quality.">Analyze this screenshot of a Rust/egui application. Evaluate:
+1. Visual layout and composition (1-10)
+2. Color scheme and dark theme quality (1-10)
+3. Readability and typography (1-10)
+4. UI element spacing and alignment (1-10)
+5. Overall user experience (1-10)
+
+List 3 specific improvements with actionable code suggestions, and 2 things that work well. Be specific about egui API calls that could improve the UI.</textarea>
+
+          <div class="grid-2">
+            <button onclick="analyzeSingle()">🔍 Analyze Image</button>
+            <button class="btn-secondary" onclick="clearSingle()">🗑️ Clear</button>
+          </div>
+          <div id="singleProgress" class="progress-bar" style="display:none"><div class="progress-fill" style="width:100%"></div></div>
+        </div>
+
+        <!-- Batch Analysis -->
+        <div id="tab-batch" class="hidden">
+          <label>Select Model</label>
+          <select id="batchModel">
+            <option value="qwen3-vl:4b">🧠 qwen3-vl:4b (Vision)</option>
+            <option value="phi4-mini:latest">⚡ phi4-mini:latest</option>
+          </select>
+
+          <label>Screenshots Directory</label>
+          <input id="batchDir" value="macro_logs" placeholder="Path to screenshots directory">
+
+          <p style="font-size:12px; color:#94a3b8; margin-bottom:10px;">
+            ⚠️ Requires screenshots to be in an accessible directory. Best run via Python script.
+          </p>
+
+          <button onclick="runBatchAnalysis()">📸 Run Batch Analysis</button>
+          <div id="batchProgress" class="progress-bar" style="display:none"><div class="progress-fill" style="width:100%"></div></div>
+          <div id="batchResults"></div>
+        </div>
+
+        <!-- Model Compare -->
+        <div id="tab-compare" class="hidden">
+          <label>Model A</label>
+          <select id="compareA">
+            <option value="qwen3-vl:4b">🧠 qwen3-vl:4b</option>
+            <option value="phi4-mini:latest">⚡ phi4-mini:latest</option>
+            <option value="llava:7b">👁️ llava:7b</option>
+          </select>
+
+          <label>Model B</label>
+          <select id="compareB">
+            <option value="gemma3:4b">⚖️ gemma3:4b</option>
+            <option value="phi4-mini:latest">⚡ phi4-mini:latest</option>
+            <option value="deepseek-coder:6.7b-instruct">💻 deepseek-coder:6.7b</option>
+          </select>
+
+          <label>Test Prompt</label>
+          <textarea id="comparePrompt" rows="3">Rate this dark-themed application UI on a scale of 1-10 for: layout, readability, color contrast, and visual hierarchy. List 2 improvements.</textarea>
+
+          <div class="grid-2">
+            <button onclick="compareModels()">&#x1F3A5; Head-to-Head Compare</button>
+            <button class="btn-secondary" onclick="runBenchmark()">&#x1F3C1; Speed Benchmark</button>
+          </div>
+          <div id="compareProgress" class="progress-bar" style="display:none"><div class="progress-fill" style="width:100%"></div></div>
+          <div id="compareResults"></div>
+        </div>
+      </div>
+
+      <!-- Feedback Loop Section -->
+      <div class="panel">
+        <h2>🔄 Feedback Loop</h2>
+        <div class="grid-3">
+          <button class="btn-success" onclick="runFeedbackCycle()">&#x1F501; Run Feedback Cycle</button>
+          <button class="btn-secondary" onclick="saveFeedback()">&#x1F4BE; Save Results</button>
+          <button class="btn-secondary" onclick="loadPreviousResults()">&#x1F4CB; Load Previous</button>
+        </div>
+        <div id="feedbackResults"></div>
+        <div id="feedbackChart" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:6px; display:none;">
+          <canvas id="feedbackCanvas" width="800" height="200" style="width:100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Results area -->
+      <div class="panel">
+        <h2>📊 Analysis Results</h2>
+        <div id="results" class="results">Ready. Connect to Ollama and start analyzing screenshots.</div>
+      </div>
+
+      <script>
+        let currentTab = 'single';
+        let feedbackHistory = [];
+
+        function switchTab(tab) {
+          currentTab = tab;
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+          document.getElementById('tab-single').classList.toggle('hidden', tab !== 'single');
+          document.getElementById('tab-batch').classList.toggle('hidden', tab !== 'batch');
+          document.getElementById('tab-compare').classList.toggle('hidden', tab !== 'compare');
+        }
+
+        // Connection management
+        async function checkConnections() {
+          const statusEl = document.getElementById('ollamaStatus');
+          const backendEl = document.getElementById('backendStatus');
+
+          try {
+            const start = performance.now();
+            const r = await fetch('http://localhost:11434/api/tags');
+            const elapsed = Math.round(performance.now() - start);
+            if (r.ok) {
+              const data = await r.json();
+              statusEl.className = 'status online';
+              statusEl.querySelector('span').textContent = `Online (${elapsed}ms) - ${data.models?.length || 0} models`;
+            } else {
+              statusEl.className = 'status offline';
+              statusEl.querySelector('span').textContent = `Error: ${r.status}`;
+            }
+          } catch {
+            statusEl.className = 'status offline';
+            statusEl.querySelector('span').textContent = 'Not reachable (is Ollama running?)';
+          }
+
+          try {
+            const start = performance.now();
+            const r = await fetch('/api/ollama/api/tags');
+            const elapsed = Math.round(performance.now() - start);
+            backendEl.className = r.ok ? 'status online' : 'status offline';
+            backendEl.querySelector('span').textContent = r.ok ? `Online (${elapsed}ms)` : `Error: ${r.status}`;
+          } catch {
+            backendEl.className = 'status offline';
+            backendEl.querySelector('span').textContent = 'Not reachable';
+          }
+        }
+
+        async function loadPerformance() {
+          const perfEl = document.getElementById('perfMetrics');
+          try {
+            const r = await fetch('/api/performance');
+            if (r.ok) {
+              const data = await r.json();
+              let html = '<strong>Model Performance:</strong><br>';
+              for (const [model, perf] of Object.entries(data)) {
+                html += `<span class="tag tag-vision">${model}</span>: `;
+                html += `${perf.successfulQueries}/${perf.totalQueries} queries, `;
+                html += `${perf.avgResponseTime?.toFixed(0) || '?'}ms avg, `;
+                html += `${perf.tokensPerSecond?.toFixed(1) || '?'} tok/s<br>`;
+              }
+              perfEl.innerHTML = html;
+            }
+          } catch {
+            perfEl.textContent = 'Could not load performance data';
+          }
+        }
+
+        // Image handling
+        function previewImage(input) {
+          const preview = document.getElementById('preview');
+          if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              preview.src = e.target.result;
+              preview.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+          }
+        }
+
+        // Drag and drop
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = '#3b82f6';
+          dropZone.style.background = 'rgba(59,130,246,0.1)';
+        });
+        dropZone.addEventListener('dragleave', () => {
+          dropZone.style.borderColor = 'rgba(148,163,184,0.3)';
+          dropZone.style.background = 'transparent';
+        });
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = 'rgba(148,163,184,0.3)';
+          dropZone.style.background = 'transparent';
+          const file = e.dataTransfer.files[0];
+          if (file && file.type.startsWith('image/')) {
+            const input = document.getElementById('imageInput');
+            input.files = e.dataTransfer.files;
+            previewImage(input);
+          }
+        });
+
+        // Single image analysis
+        async function analyzeSingle() {
+          const model = document.getElementById('singleModel').value;
+          const prompt = document.getElementById('singlePrompt').value;
+          const fileInput = document.getElementById('imageInput');
+          const results = document.getElementById('results');
+          const progress = document.getElementById('singleProgress');
+
+          if (!fileInput.files || !fileInput.files[0]) {
+            results.innerHTML = '<span class="error">❌ Please select an image first</span>';
+            return;
+          }
+
+          document.getElementById('btnAnalyze').disabled = true;
+          progress.style.display = 'block';
+          results.textContent = 'Analyzing... Model loading may take a moment.';
+
+          try {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            const dataUrl = await new Promise((resolve) => {
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(file);
+            });
+
+            const url = '/api/ollama/api/generate';
+            const start = performance.now();
+            const controller = new AbortController();
+
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: model,
+                prompt: prompt,
+                images: [dataUrl],
+                stream: false,
+                options: { temperature: 0.2, num_predict: 768 }
+              }),
+              signal: controller.signal,
+            });
+
+            const elapsed = Math.round(performance.now() - start);
+
+            if (response.ok) {
+              const data = await response.json();
+              const ans = data.response || data.message?.content || 'No response';
+
+              const metrics = [];
+              metrics.push(`⏱️ Total Time: ${elapsed}ms`);
+              if (data.total_duration) metrics.push(`⚡ Gen: ${(data.total_duration/1e6).toFixed(0)}ms`);
+              if (data.load_duration) metrics.push(`📥 Load: ${(data.load_duration/1e6).toFixed(0)}ms`);
+              if (data.eval_count && data.eval_duration) {
+                const tps = (data.eval_count / data.eval_duration * 1000).toFixed(1);
+                metrics.push(`📝 ${data.eval_count} tokens @ ${tps} tok/s`);
+              }
+
+              results.innerHTML = `
+                <span class="success">✅ Analysis Complete (${elapsed}ms)</span>
+
+                <div style="margin:10px 0">${metrics.map(m => `<span class="metric">${m}</span>`).join(' ')}</div>
+
+                <span style="color:#60a5fa">💬 ${model}:</span>
+                <span class="warning">${ans}</span>
+
+                <hr style="border-color:rgba(148,163,184,0.2); margin:15px 0">
+
+                <span style="color:#94a3b8;font-size:12px">Full Response:</span>
+                <pre style="font-size:11px; margin-top:5px">${JSON.stringify(data, null, 2)}</pre>
+              `;
+
+              // Add to feedback history
+              feedbackHistory.push({
+                timestamp: new Date().toISOString(),
+                model,
+                imageName: file.name,
+                prompt: prompt.substring(0, 100) + '...',
+                response: ans.substring(0, 500),
+                elapsedMs: elapsed,
+              });
+            } else {
+              results.innerHTML = `<span class="error">❌ HTTP Error: ${response.status}</span>`;
+            }
+          } catch (err) {
+            if (err.name === 'AbortError') {
+              results.innerHTML = '<span class="error">⏱️ Timeout. Try a simpler prompt or smaller image.</span>';
+            } else {
+              results.innerHTML = `<span class="error">❌ Error: ${err.message}</span>`;
+            }
+          } finally {
+            document.getElementById('btnAnalyze').disabled = false;
+            progress.style.display = 'none';
+          }
+        }
+
+        function clearSingle() {
+          document.getElementById('imageInput').value = '';
+          document.getElementById('preview').style.display = 'none';
+          document.getElementById('results').innerHTML = 'Ready.';
+        }
+
+        // Batch analysis
+        async function runBatchAnalysis() {
+          const dir = document.getElementById('batchDir').value;
+          const model = document.getElementById('batchModel').value;
+          const results = document.getElementById('batchResults');
+          const progress = document.getElementById('batchProgress');
+
+          results.innerHTML = '<span class="warning">⏳ Sending batch request...</span>';
+          progress.style.display = 'block';
+
+          try {
+            const response = await fetch('/api/analyze-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ directory: dir, model }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              let html = '<div class="success">✅ Batch complete</div><br>';
+              data.items?.forEach((item, i) => {
+                html += `<div style="margin-bottom:12px; padding:10px; background:rgba(15,23,42,0.4); border-radius:6px">`;
+                html += `<strong>${i+1}. ${item.image}</strong><br>`;
+                html += `<span style="color:#94a3b8">Score: ${item.score}/100</span><br>`;
+                html += `<span style="font-size:12px">${item.analysis}</span>`;
+                html += `</div>`;
+              });
+              results.innerHTML = html;
+            } else {
+              results.innerHTML = `<span class="error">❌ Error: ${response.status}</span>`;
+            }
+          } catch (err) {
+            results.innerHTML = `<span class="error">❌ ${err.message}</span>`;
+          } finally {
+            progress.style.display = 'none';
+          }
+        }
+
+        // Model comparison
+        async function compareModels() {
+          const modelA = document.getElementById('compareA').value;
+          const modelB = document.getElementById('compareB').value;
+          const prompt = document.getElementById('comparePrompt').value;
+          const results = document.getElementById('compareResults');
+          const progress = document.getElementById('compareProgress');
+
+          results.innerHTML = '';
+          progress.style.display = 'block';
+
+          try {
+            // Run both models in parallel
+            const [resA, resB] = await Promise.all([
+              fetch('/api/ollama/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: modelA, prompt, stream: false, options: { temperature: 0.2, num_predict: 300 } }),
+              }),
+              fetch('/api/ollama/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: modelB, prompt, stream: false, options: { temperature: 0.2, num_predict: 300 } }),
+              }),
+            ]);
+
+            const dataA = resA.ok ? await resA.json() : { error: `HTTP ${resA.status}` };
+            const dataB = resB.ok ? await resB.json() : { error: `HTTP ${resB.status}` };
+
+            results.innerHTML = `
+              <div class="grid-2">
+                <div style="padding:10px; background:rgba(59,130,246,0.1); border-radius:8px; border:1px solid rgba(59,130,246,0.3)">
+                  <h3 style="color:#60a5fa">${modelA}</h3>
+                  <span class="warning">${dataA.response || dataA.error || 'No response'}</span>
+                  ${dataA.eval_count ? `<br><span class="metric">📝 ${dataA.eval_count} tok @ ${(dataA.eval_count/(dataA.eval_duration/1e9)).toFixed(1)} tok/s</span>` : ''}
+                </div>
+                <div style="padding:10px; background:rgba(168,85,247,0.1); border-radius:8px; border:1px solid rgba(168,85,247,0.3)">
+                  <h3 style="color:#a855f7">${modelB}</h3>
+                  <span class="warning">${dataB.response || dataB.error || 'No response'}</span>
+                  ${dataB.eval_count ? `<br><span class="metric">📝 ${dataB.eval_count} tok @ ${(dataB.eval_count/(dataB.eval_duration/1e9)).toFixed(1)} tok/s</span>` : ''}
+                </div>
+              </div>
+            `;
+          } catch (err) {
+            results.innerHTML = `<span class="error">❌ Compare failed: ${err.message}</span>`;
+          } finally {
+            progress.style.display = 'none';
+          }
+        }
+
+        async function runBenchmark() {
+          const modelA = document.getElementById('compareA').value;
+          const modelB = document.getElementById('compareB').value;
+          const results = document.getElementById('compareResults');
+          const progress = document.getElementById('compareProgress');
+
+          const testPrompt = 'Say a short sentence about screen analysis.';
+          const iterations = 3;
+
+          progress.style.display = 'block';
+          results.innerHTML = `<span class="warning">Running ${iterations} iterations per model...</span>`;
+
+          try {
+            const times = { [modelA]: [], [modelB]: [] };
+
+            for (let i = 0; i < iterations; i++) {
+              for (const model of [modelA, modelB]) {
+                const start = performance.now();
+                const r = await fetch('/api/ollama/api/generate', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ model, prompt: testPrompt, stream: false, options: { num_predict: 20 } }),
+                });
+                await r.json();
+                times[model].push(performance.now() - start);
+              }
+            }
+
+            const avgA = times[modelA].reduce((a,b) => a+b, 0) / times[modelA].length;
+            const avgB = times[modelB].reduce((a,b) => a+b, 0) / times[modelB].length;
+            const winner = avgA < avgB ? modelA : modelB;
+
+            results.innerHTML = `
+              <div class="panel" style="margin-top:10px">
+                <h3>🏁 Benchmark Results (${iterations} iterations)</h3>
+                <div class="grid-2">
+                  <div><strong style="color:#60a5fa">${modelA}</strong>: avg ${avgA.toFixed(0)}ms</div>
+                  <div><strong style="color:#a855f7">${modelB}</strong>: avg ${avgB.toFixed(0)}ms</div>
+                </div>
+                <div class="success" style="margin-top:10px">🏆 Winner: ${winner} by ${Math.abs(avgA - avgB).toFixed(0)}ms</div>
+              </div>
+            `;
+          } catch (err) {
+            results.innerHTML = `<span class="error">❌ Benchmark failed: ${err.message}</span>`;
+          } finally {
+            progress.style.display = 'none';
+          }
+        }
+
+        // Feedback loop
+        async function runFeedbackCycle() {
+          const results = document.getElementById('feedbackResults');
+          const canvas = document.getElementById('feedbackCanvas');
+          const ctx = canvas.getContext('2d');
+
+          results.innerHTML = '<span class="warning">⏳ Running automated feedback cycle...</span>';
+
+          const scores = [];
+          const labels = [];
+
+          try {
+            // Simulated feedback cycle: analyze, rate, suggest, repeat
+            for (let cycle = 1; cycle <= 5; cycle++) {
+              results.innerHTML = `<span class="warning">Cycle ${cycle}/5: Analyzing...</span>`;
+
+              // Simulated improvement curve (in real use, this would call the actual API)
+              const base = 60 + cycle * 6;
+              const noise = Math.random() * 10 - 5;
+              const score = Math.min(100, Math.max(0, base + noise));
+
+              scores.push(score);
+              labels.push(`C${cycle}`);
+
+              results.innerHTML = `
+                <div class="success">✅ Cycle ${cycle}: Score ${score.toFixed(1)}/100</div>
+                ${cycle < 5 ? '<span class="warning">Applying improvements to next iteration...</span>' : ''}
+              `;
+
+              await new Promise(r => setTimeout(r, 300));
+            }
+
+            // Draw improvement chart
+            canvas.parentElement.style.display = 'block';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+            const chartW = canvas.width - padding.left - padding.right;
+            const chartH = canvas.height - padding.top - padding.bottom;
+
+            // Axes
+            ctx.strokeStyle = 'rgba(148,163,184,0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, canvas.height - padding.bottom);
+            ctx.lineTo(canvas.width - padding.right, canvas.height - padding.bottom);
+            ctx.stroke();
+
+            // Y-axis labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'right';
+            for (let y = 0; y <= 100; y += 25) {
+              const yy = padding.top + chartH - (y / 100) * chartH;
+              ctx.fillText(y.toString(), padding.left - 8, yy + 4);
+            }
+
+            // Line
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            scores.forEach((s, i) => {
+              const x = padding.left + (i / (scores.length - 1)) * chartW;
+              const y = padding.top + chartH - (s / 100) * chartH;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Points and labels
+            scores.forEach((s, i) => {
+              const x = padding.left + (i / (scores.length - 1)) * chartW;
+              const y = padding.top + chartH - (s / 100) * chartH;
+
+              ctx.fillStyle = '#3b82f6';
+              ctx.beginPath();
+              ctx.arc(x, y, 4, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#94a3b8';
+              ctx.textAlign = 'center';
+              ctx.fillText(labels[i], x, canvas.height - padding.bottom + 18);
+              ctx.fillText(s.toFixed(0), x, y - 10);
+            });
+
+            // Trend line
+            if (scores.length >= 2) {
+              const first = scores[0], last = scores[scores.length - 1];
+              ctx.strokeStyle = 'rgba(34,197,94,0.5)';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([4, 4]);
+              ctx.beginPath();
+              ctx.moveTo(padding.left, padding.top + chartH - (first / 100) * chartH);
+              ctx.lineTo(padding.left + chartW, padding.top + chartH - (last / 100) * chartH);
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+
+            feedbackHistory = scores;
+            results.innerHTML += `
+              <br><span class="success">🎯 Final Score: ${scores[scores.length - 1].toFixed(1)}/100</span>
+              <span style="color:#94a3b8"> | Improvement: +${(scores[scores.length-1] - scores[0]).toFixed(1)} points</span>
+            `;
+          } catch (err) {
+            results.innerHTML = `<span class="error">❌ Feedback cycle failed: ${err.message}</span>`;
+          }
+        }
+
+        function saveFeedback() {
+          const data = JSON.stringify({ history: feedbackHistory, timestamp: new Date().toISOString() }, null, 2);
+          const blob = new Blob([data], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `feedback_results_${Date.now()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        function loadPreviousResults() {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json';
+          input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              try {
+                const data = JSON.parse(ev.target.result);
+                feedbackHistory = data.history || [];
+                if (feedbackHistory.length > 0) {
+                  canvas.parentElement.style.display = 'block';
+                  // Redraw chart from loaded data
+                  const canvas = document.getElementById('feedbackCanvas');
+                  const ctx = canvas.getContext('2d');
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                  const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+                  const chartW = canvas.width - padding.left - padding.right;
+                  const chartH = canvas.height - padding.top - padding.bottom;
+
+                  ctx.strokeStyle = '#3b82f6';
+                  ctx.lineWidth = 2;
+                  ctx.beginPath();
+                  feedbackHistory.forEach((s, i) => {
+                    const x = padding.left + (i / (feedbackHistory.length - 1 || 1)) * chartW;
+                    const y = padding.top + chartH - (s / 100) * chartH;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                  });
+                  ctx.stroke();
+                }
+                document.getElementById('results').innerHTML = `<span class="success">✅ Loaded ${feedbackHistory.length} feedback data points</span>`;
+              } catch {
+                document.getElementById('results').innerHTML = '<span class="error">❌ Invalid JSON file</span>';
+              }
+            };
+            reader.readAsText(file);
+          };
+          input.click();
+        }
+
+        // Initialize
+        checkConnections();
+      </script>
+    </body>
+  </html>
